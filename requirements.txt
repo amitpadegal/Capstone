@@ -1,0 +1,6 @@
+timm 
+fairscale
+torch
+transformers
+# functools
+numpy

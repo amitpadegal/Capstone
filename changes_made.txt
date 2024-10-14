@@ -1,0 +1,33 @@
+File blip.py Line 180
+function init_tokeniser() 
+Had to change it because it wasn't adding the special tokens properly
+Original Code:
+
+def init_tokenizer():
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    tokenizer.add_special_tokens({'bos_token':'[DEC]'})
+    tokenizer.add_special_tokens({'additional_special_tokens':['[ENC]']})       
+    tokenizer.enc_token_id = tokenizer.additional_special_tokens_ids[0]  
+    return tokenizer
+
+##############################################
+
+File med_config.json 
+
+The vocabulary size is increased to 30524. The old one was considering just the original size without the added special tokens.
+Original value : 30522
+
+##############################################
+
+File vqa.py Line 97
+Variable question_states
+
+Had to change it because it was interleaving for all the beams prior. It was happening again in the code somewhere (don't know where yet).
+Question states shape before : (9, 8, 768)
+The attention mechanism required the dim 0 to be equal to be number of beams. Hence the change
+Now the shape is (3, 8, 768). The number of beams here is 3. 
+
+Original code:
+question_states = question_output.last_hidden_state.repeat_interleave(num_beams,dim=0)
+
+##############################################
