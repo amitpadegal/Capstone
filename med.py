@@ -150,6 +150,7 @@ class BertSelfAttention(nn.Module):
         encoder_attention_mask=None,
         past_key_value=None,
         output_attentions=False,
+        is_decoder = False
     ):
 
         mixed_query_layer = self.query(hidden_states)
@@ -159,6 +160,11 @@ class BertSelfAttention(nn.Module):
         # such that the encoder's padding tokens are not attended to.
         is_cross_attention = encoder_hidden_states is not None
 
+        # if is_cross_attention and not is_decoder:
+        #     mixed_query_layer = self.query(encoder_hidden_states)
+        #     key_layer = self.transpose_for_scores(self.key(hidden_states))
+        #     value_layer = self.transpose_for_scores(self.value(hidden_states))
+        #     attention_mask = attention_mask
         if is_cross_attention:
             key_layer = self.transpose_for_scores(self.key(encoder_hidden_states))
             value_layer = self.transpose_for_scores(self.value(encoder_hidden_states))
@@ -181,8 +187,11 @@ class BertSelfAttention(nn.Module):
         #     print("Encoder Hidden State:", encoder_hidden_states.shape)
         #     print("Query Value:", query_layer.shape)
         #     print("Key Value:", key_layer.shape)
+        # print("Query:", query_layer.shape)
+        # print("Key:", key_layer.shape)
+            
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
-
+        # print("Attention Scores:", attention_scores.shape)
         if self.position_embedding_type == "relative_key" or self.position_embedding_type == "relative_key_query":
             seq_length = hidden_states.size()[1]
             position_ids_l = torch.arange(seq_length, dtype=torch.long, device=hidden_states.device).view(-1, 1)
@@ -200,10 +209,21 @@ class BertSelfAttention(nn.Module):
                 attention_scores = attention_scores + relative_position_scores_query + relative_position_scores_key
 
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
-        if attention_mask is not None:
-            # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
-            attention_scores = attention_scores + attention_mask
+        # if attention_mask is not None:
+        #     # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
+        #     print("Is cross attention:", is_cross_attention)
+        #     print("is decoder:", is_decoder)
+        #     print("Attention Mask inside:", attention_mask.shape)
+        #     print("Attention Scores inside:", attention_scores.shape)
+        #     attention_scores = attention_scores + attention_mask
+        # else:
+        #     print("Attention Mask is None")
 
+        # if is_cross_attention and not is_decoder:
+        #     print("Attention Scores for Mask:", attention_scores.shape)
+        #     print("Attention Mask:", attention_mask.shape)
+        # if is_cross_attention and not is_decoder:
+        #     print("Encoder Attention Mask:", encoder_attention_mask.shape)
         # Normalize the attention scores to probabilities.
         attention_probs = nn.Softmax(dim=-1)(attention_scores)
         
@@ -220,7 +240,8 @@ class BertSelfAttention(nn.Module):
             attention_probs_dropped = attention_probs_dropped * head_mask
 
         context_layer = torch.matmul(attention_probs_dropped, value_layer)
-
+        # if is_cross_attention and not is_decoder:
+        #     print("Outputs:", context_layer.shape)
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
@@ -228,6 +249,8 @@ class BertSelfAttention(nn.Module):
         outputs = (context_layer, attention_probs) if output_attentions else (context_layer,)
 
         outputs = outputs + (past_key_value,)
+        # if is_cross_attention and not is_decoder:
+        #     print("Outputs:", context_layer.shape)
         return outputs
 
 
@@ -241,6 +264,7 @@ class BertSelfOutput(nn.Module):
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
+        # print("Inside Output:", hidden_states.shape)
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
         return hidden_states
 
@@ -250,6 +274,7 @@ class BertAttention(nn.Module):
         super().__init__()
         self.self = BertSelfAttention(config, is_cross_attention)
         self.output = BertSelfOutput(config)
+        self.is_cross_attention = is_cross_attention
         self.pruned_heads = set()
 
     def prune_heads(self, heads):
@@ -279,6 +304,7 @@ class BertAttention(nn.Module):
         encoder_attention_mask=None,
         past_key_value=None,
         output_attentions=False,
+        is_decoder = False
     ):
         self_outputs = self.self(
             hidden_states,
@@ -288,7 +314,13 @@ class BertAttention(nn.Module):
             encoder_attention_mask,
             past_key_value,
             output_attentions,
+            is_decoder = is_decoder
+
         )
+        # if self.is_cross_attention:
+        #     print("Hidden States:", encoder_hidden_states.shape)
+        #     attention_output = self.output(self_outputs[0], encoder_hidden_states)
+        # else:
         attention_output = self.output(self_outputs[0], hidden_states)
         outputs = (attention_output,) + self_outputs[1:]  # add attentions if we output them
         return outputs
@@ -346,6 +378,7 @@ class BertLayer(nn.Module):
         past_key_value=None,
         output_attentions=False,
         mode=None,
+        is_decoder = False
     ):
         # decoder uni-directional self-attention cached key/values tuple is at positions 1,2
         self_attn_past_key_value = past_key_value[:2] if past_key_value is not None else None
@@ -371,6 +404,7 @@ class BertLayer(nn.Module):
                 encoder_hidden_states,
                 encoder_attention_mask,
                 output_attentions=output_attentions,
+                is_decoder = is_decoder
             )
             attention_output = cross_attention_outputs[0]
             outputs = outputs + cross_attention_outputs[1:-1]  # add cross attentions if we output attention weights                               
@@ -408,6 +442,7 @@ class BertEncoder(nn.Module):
         output_attentions=False,
         output_hidden_states=False,
         return_dict=True,
+        is_decoder=False,
         mode='multimodal',
     ):
         all_hidden_states = () if output_hidden_states else None
@@ -457,6 +492,7 @@ class BertEncoder(nn.Module):
                     past_key_value,
                     output_attentions,
                     mode=mode,
+                    is_decoder = is_decoder
                 )
 
             hidden_states = layer_outputs[0]
@@ -796,6 +832,7 @@ class BertModel(BertPreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             mode=mode,
+            is_decoder = is_decoder
         )
         sequence_output = encoder_outputs[0]
         pooled_output = self.pooler(sequence_output) if self.pooler is not None else None

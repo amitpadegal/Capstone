@@ -33,7 +33,7 @@ class BLIP_VQA(nn.Module):
         self.text_decoder = BertLMHeadModel(config=decoder_config)          
 
 
-    def forward(self, image, question, answer=None, n=None, weights=None, train=False, inference='generate', k_test=128):
+    def forward(self, image, question, answer=None, n=None, weights=None, train=True, inference='generate', k_test=128):
         with open('temp_data.txt', 'a') as f:  # 'a' mode to append
             f.write("Input Image Shape: {}\n".format(image.shape))
             f.write("Input Question: {}\n".format(question))

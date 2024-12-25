@@ -10,13 +10,13 @@ transform = transforms.Compose([
         normalize,
         ])  
 
-image = Image.open("one-piece.jpeg")
+image = Image.open("images/dog_image.jpeg")
 image = transform(image)
 image = image.unsqueeze(0)
 # print(image.shape)
-question = "How many people are there in the image?"
+question = "What is the colour of the clown's nose?"
 
 model = blip_vqa(pretrained='model_vqa.pth')
 
-logits = model(image, question)
+logits = model(image, question, inference= 'generate')
 print(logits)

@@ -1,0 +1,7 @@
+venv
+__pycache__
+.ipynb_checkpoints
+model_base_14M.pth
+model_vqa.pth
+annotation
+images

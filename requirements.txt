@@ -2,5 +2,5 @@ timm
 fairscale
 torch
 transformers
-# functools
 numpy
+ruamel_yaml
