@@ -1,5 +1,5 @@
-vqa_root: '/export/share/datasets/vision/VQA/Images/mscoco/' #followed by train2014/
-vg_root: '/export/share/datasets/vision/visual-genome/'  #followed by image/
+vqa_root: '/Users/amitpadegal/Downloads/' #followed by train2014/
+vg_root: '/Users/amitpadegal/Downloads/'  #followed by image/
 train_files: ['vqa_train','vqa_val','vg_qa']
 ann_root: 'annotation'
 

@@ -4,3 +4,4 @@ torch
 transformers
 numpy
 ruamel_yaml
+opencv-python
