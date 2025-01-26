@@ -847,7 +847,7 @@ class BertModel(BertPreTrainedModel):
             hidden_states=encoder_outputs.hidden_states,
             attentions=encoder_outputs.attentions,
             cross_attentions=encoder_outputs.cross_attentions,
-        )
+        ), embedding_output
 
 
 
@@ -926,7 +926,7 @@ class BertLMHeadModel(BertPreTrainedModel):
         if labels is not None:
             use_cache = False
 
-        outputs = self.bert(
+        outputs, _ = self.bert(
             input_ids,
             attention_mask=attention_mask,
             position_ids=position_ids,

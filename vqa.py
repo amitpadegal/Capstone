@@ -54,11 +54,12 @@ class BLIP_VQA(nn.Module):
             answer.input_ids[:,0] = self.tokenizer.bos_token_id
             answer_targets = answer.input_ids.masked_fill(answer.input_ids == self.tokenizer.pad_token_id, -100)      
 
-            question_output = self.text_encoder(question.input_ids, 
+            question_output, question_emb = self.text_encoder(question.input_ids, 
                                                 attention_mask = question.attention_mask, 
                                                 encoder_hidden_states = image_embeds,
                                                 encoder_attention_mask = image_atts,                             
                                                 return_dict = True)    
+
 
             question_states = []                
             question_atts = []  
@@ -80,7 +81,7 @@ class BLIP_VQA(nn.Module):
             loss = weights * answer_output.loss
             loss = loss.sum()/image.size(0)
 
-            return loss
+            return loss, image_embeds, question_emb
             
 
         else: 

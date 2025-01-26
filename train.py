@@ -14,6 +14,7 @@ import time
 import datetime
 import json
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
@@ -40,14 +41,30 @@ def train(model, data_loader, optimizer, epoch, device):
 
     header = 'Train Epoch: [{}]'.format(epoch)
     print_freq = 50    
+    image_grad_accumulator, text_grad_accumulator, tot_batches = 0, 0, 0
     
     for i,(image, question, answer, weights, n) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
         image, weights = image.to(device,non_blocking=True), weights.to(device,non_blocking=True)      
+        model.zero_grad()
+        loss, image_emb, question_emb = model(image, question, answer, train=True, n=n, weights=weights)   
 
-        loss = model(image, question, answer, train=True, n=n, weights=weights)        
-        
-        optimizer.zero_grad()
+        image_emb.requires_grad_(True)
+        question_emb.requires_grad_(True)
+
+        image_emb.retain_grad()  # Retain gradient for image_emb
+        question_emb.retain_grad()  # Retain gradient for question_emb
+        # optimizer.zero_grad()
         loss.backward()
+        image_grad = image_emb.grad
+        text_grad = question_emb.grad
+
+        image_grad_mean_square = torch.mean(image_grad ** 2).item()
+        text_grad_mean_square = torch.mean(text_grad ** 2).item()
+        
+        
+        # Accumulate the mean square gradients
+        image_grad_accumulator += image_grad_mean_square
+        text_grad_accumulator += text_grad_mean_square
         optimizer.step()    
         
         metric_logger.update(loss=loss.item())
@@ -56,7 +73,7 @@ def train(model, data_loader, optimizer, epoch, device):
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
     print("Averaged stats:", metric_logger.global_avg())     
-    return {k: "{:.3f}".format(meter.global_avg) for k, meter in metric_logger.meters.items()} 
+    return {k: "{:.3f}".format(meter.global_avg) for k, meter in metric_logger.meters.items()}, (image_grad_accumulator, text_grad_accumulator, tot_batches)
 
 
 @torch.no_grad()
@@ -125,6 +142,10 @@ def main(args, config):
     print("Creating model")
     model = blip_vqa(pretrained=config['pretrained'], image_size=config['image_size'], 
                        vit=config['vit'], vit_grad_ckpt=config['vit_grad_ckpt'], vit_ckpt_layer=config['vit_ckpt_layer'])
+    # Check the requires_grad attribute for all model parameters
+    for name, param in model.named_parameters():
+        if 'embedding' in name:  # Check if it's part of the embedding layer
+            print(f"{name}: {param.requires_grad}")
 
     model = model.to(device)   
     
@@ -137,6 +158,9 @@ def main(args, config):
 
     best = 0
     best_epoch = 0 
+    epoch_image_grad_accumulator = []
+    epoch_text_grad_accumulator = []
+    gradient_contributions = []
        
     print("Start training")
     start_time = time.time()    
@@ -147,7 +171,21 @@ def main(args, config):
                 
             cosine_lr_schedule(optimizer, epoch, config['max_epoch'], config['init_lr'], config['min_lr'])
                 
-            train_stats = train(model, train_loader, optimizer, epoch, device) 
+            train_stats, (image_grad_accumulator, text_grad_accumulator, total_batches) = train(model, train_loader, optimizer, epoch, device)
+            image_grad_magnitude = image_grad_accumulator / total_batches
+            text_grad_magnitude = text_grad_accumulator / total_batches
+
+            total_magnitude = image_grad_magnitude + text_grad_magnitude
+            a = image_grad_magnitude / total_magnitude
+            b = text_grad_magnitude / total_magnitude
+
+            # Log the contributions for visualization
+            gradient_contributions.append((a, b))
+            print(f"Epoch {epoch+1}/{config['max_epoch']}: a (image contribution) = {a}, b (text contribution) = {b}")
+            
+            # Store the epoch-level accumulators for later analysis
+            epoch_image_grad_accumulator.append(image_grad_magnitude)
+            epoch_text_grad_accumulator.append(text_grad_magnitude) 
 
         else:         
             break        
@@ -167,7 +205,19 @@ def main(args, config):
             }
             torch.save(save_obj, os.path.join(args.output_dir, 'checkpoint_%02d.pth'%epoch))  
 
-        dist.barrier()         
+        dist.barrier()     
+    epochs = list(range(1, config['max_epoch'] + 1))
+    a_values, b_values = zip(*gradient_contributions)
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(epochs, a_values, label="Image Contribution (a)", marker='o')
+    plt.plot(epochs, b_values, label="Text Contribution (b)", marker='o')
+    plt.title("Image and Text Contributions Over Epochs")
+    plt.xlabel("Epochs")
+    plt.ylabel("Contribution")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
     vqa_result = evaluation(model_without_ddp, test_loader, device, config)        
     result_file = save_result(vqa_result, args.result_dir, 'vqa_result')  
