@@ -106,7 +106,10 @@ def evaluation(model, data_loader, device, config) :
             answer_ids = model(image, question, answer_candidates, train=False, inference='rank', k_test=config['k_test'])      
 
             for ques_id, answer_id in zip(question_id, answer_ids):
-                result.append({"question_id":int(ques_id.item()), "answer":answer_list[answer_id]})   
+                result.append({"question_id":int(ques_id.item()), "answer":answer_list[answer_id]}) 
+        
+        if n == 2:
+            break
 
     return result
 
@@ -143,9 +146,9 @@ def main(args, config):
     model = blip_vqa(pretrained=config['pretrained'], image_size=config['image_size'], 
                        vit=config['vit'], vit_grad_ckpt=config['vit_grad_ckpt'], vit_ckpt_layer=config['vit_ckpt_layer'])
     # Check the requires_grad attribute for all model parameters
-    for name, param in model.named_parameters():
-        if 'embedding' in name:  # Check if it's part of the embedding layer
-            print(f"{name}: {param.requires_grad}")
+    # for name, param in model.named_parameters():
+    #     if 'embedding' in name:  # Check if it's part of the embedding layer
+    #         print(f"{name}: {param.requires_grad}")
 
     model = model.to(device)   
     
@@ -163,6 +166,7 @@ def main(args, config):
     gradient_contributions = []
        
     print("Start training")
+    # print(args.evaluate)
     start_time = time.time()    
     for epoch in range(0, config['max_epoch']):
         if not args.evaluate:        
@@ -206,18 +210,18 @@ def main(args, config):
             torch.save(save_obj, os.path.join(args.output_dir, 'checkpoint_%02d.pth'%epoch))  
 
         dist.barrier()     
-    epochs = list(range(1, config['max_epoch'] + 1))
-    a_values, b_values = zip(*gradient_contributions)
+    # epochs = list(range(1, config['max_epoch'] + 1))
+    # a_values, b_values = zip(*gradient_contributions)
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(epochs, a_values, label="Image Contribution (a)", marker='o')
-    plt.plot(epochs, b_values, label="Text Contribution (b)", marker='o')
-    plt.title("Image and Text Contributions Over Epochs")
-    plt.xlabel("Epochs")
-    plt.ylabel("Contribution")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+    # plt.figure(figsize=(10, 6))
+    # plt.plot(epochs, a_values, label="Image Contribution (a)", marker='o')
+    # plt.plot(epochs, b_values, label="Text Contribution (b)", marker='o')
+    # plt.title("Image and Text Contributions Over Epochs")
+    # plt.xlabel("Epochs")
+    # plt.ylabel("Contribution")
+    # plt.legend()
+    # plt.grid(True)
+    # plt.show()
 
     vqa_result = evaluation(model_without_ddp, test_loader, device, config)        
     result_file = save_result(vqa_result, args.result_dir, 'vqa_result')  
@@ -233,7 +237,7 @@ if __name__ == '__main__':
     parser.add_argument('--config', default='vqa.yaml') 
     parser.add_argument('--output_dir', default='output')
     parser.add_argument('--result_dir', default='result')
-    parser.add_argument('--evaluate', action='store_true')      
+    parser.add_argument('--evaluate', default=True, action='store_true')      
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--world_size', default=1, type=int, help='number of distributed processes')    

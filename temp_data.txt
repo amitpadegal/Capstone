@@ -62,3 +62,55 @@ Input Image Shape: torch.Size([16, 3, 480, 480])
 Input Question: ['what color is the carriage?', 'what holiday is being celebrated?', 'what are the cows standing on?', 'what color is the laptop on the right of the photo?', "what is around the man's neck?", 'is there construction going on nearby?', "where are the cat's claws?", 'what is the person holding in to?', 'what kind of cat is this?', 'what movie is the character from?', 'where is the photographer sitting?', 'how many legs does the bench have?', 'what color are the trees?', 'where are the ladies sitting?', 'where are the cars parked?', 'what restaurant is this?']
 Input Image Shape: torch.Size([16, 3, 480, 480])
 Input Question: ['what is the weather?', 'what is the person doing?', 'what is to the right of the keyboard?', 'what type of very large bear is this?', 'how many people are pictured here?', 'how many giraffe are there?', 'what brand is the bread?', 'who is in the photo?', 'how many people?', 'where is the man riding?', 'what is the sidewalk made of?', 'what is the car color?', 'what color are the elephants?', 'where is the bark?', 'where is the leafy green trees behind the fence near?', 'what color is the odd bull?']
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What is the colour of the clown's nose?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What breed does the dog in the image belong to?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: What breed does the dog in the image belong to?
+Input Image Shape: torch.Size([1, 3, 480, 480])
+Input Question: Given the distinct physical characteristics presented in this photograph, including the dog's coat texture, facial structure, and overall build, could you provide a precise identification of the canine breed depicted?
+Input Image Shape: torch.Size([32, 3, 480, 480])
+Input Question: ('where is he looking?', 'what are the people in the background doing?', 'what is he on top of?', 'what website copyrighted the picture?', 'is this a creamy soup?', 'is this rice noodle soup?', 'what is to the right of the soup?', 'what is the man doing in the street?', "how many photo's can you see?", 'what does the truck on the left sell?', 'why is there a gap between the roof and wall?', 'is it daylight in this picture?', 'why is the cow laying down?', 'what color is the grass in this picture?', 'did the batter hit the ball?', 'how many are playing ball?', 'is there a chain link fence in the image?', 'is the boy playing baseball?', 'is that a folding chair?', 'how many beds?', 'what color is the bedspread?', 'how many pictures are there?', 'are these twin mattresses?', 'how many sources of light are there?', 'is this room decorated for the 1970s?', 'are the lights on in this room?', 'are the windows big?', 'what is the chair made of?', "is this room in someone's home?", 'which room is this?', 'is the bed white?', 'could this be a hotel room?')
+Input Image Shape: torch.Size([32, 3, 480, 480])
+Input Question: ('is the bed made?', 'are there bed headboards present in the photo?', 'is there a mirror in the room?', 'what kind of room is this?', 'how many chairs are in the photo?', 'is the desk cluttered?', 'has the bed been made?', 'how many seats are there?', 'how many frames are on the wall?', 'what color are the walls?', 'are there any boxes in the room?', 'could this be a multi-purpose room?', 'what animal print does that chair resemble?', 'what is behind the foot of the bed?', 'what is the size of the bed?', 'how many pictures on the wall?', 'will this kid leave the powdered sugar on his face?', 'what is the child eating?', 'is this person wearing a tie?', 'what color is the kids hair?', "is the man's tie purple?", 'where was the picture taken of the man?', 'what is the man wearing on his head?', 'is this a designer tie?', 'is this photo color?', 'does the door open inward or outward?', 'is there a drainage in the pic?', 'what does the sentence on the top say?', 'what kind of vehicle is the rv pulling on the bottom picture?', 'where is the camping tent?', 'what color are the gym shoes?', 'is there a red sandal here?')
+Input Image Shape: torch.Size([32, 3, 480, 480])
+Input Question: ('what color is the flip flop?', 'are there players in the dugout?', 'is the battery looking at the ball?', 'how many people are on the field?', 'how many signs?', 'what color is the salisbury rd sign?', 'what does the last sign say?', 'what color is the sign?', 'can you turn right or left in the tunnel?', 'what color is the plant?', "what color is the woman's shirt on the left?", 'what type of beverage is being displayed?', 'why are some people wearing hats?', 'what kind of event are the people involved in?', 'how many skyscrapers are there?', 'what is the color of the building in the background?', 'is there a tree in front of the building?', 'is there a person riding a bike?', 'are there lights on in the two buildings?', 'how many stories is the building on the left?', 'is this a hospital?', 'how many umbrellas do you see?', 'how many colors is the building on the right painted?', "what is on the boy's back walking?", 'how many modes of transportation are depicted?', 'what color is the building?', 'is it still snowing in the picture?', 'does this appear to be a photo of multiple exposures of the black clad snowboarder?', 'how many people can you see in the picture?', 'is this an adult party?', 'what is being celebrated?', 'who is in front of the cake with candles?')

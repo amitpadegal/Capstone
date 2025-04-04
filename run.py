@@ -13,8 +13,8 @@ transform = transforms.Compose([
 image = Image.open("images/dog_image.jpeg")
 image = transform(image)
 image = image.unsqueeze(0)
-# print(image.shape)
-question = "What is the colour of the clown's nose?"
+# print(image.shape)``
+question = "Given the distinct physical characteristics presented in this photograph, including the dog's coat texture, facial structure, and overall build, could you provide a precise identification of the canine breed depicted?"
 
 model = blip_vqa(pretrained='model_vqa.pth')
 

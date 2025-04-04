@@ -19,7 +19,6 @@ class vqa_dataset(Dataset):
         
         if split=='train':
             urls = {'vqa_train':'https://storage.googleapis.com/sfr-vision-language-research/datasets/vqa_train.json',
-                    'vqa_val':'https://storage.googleapis.com/sfr-vision-language-research/datasets/vqa_val.json',
                     'vg_qa':'https://storage.googleapis.com/sfr-vision-language-research/datasets/vg_qa.json'}
         
             self.annotation = []
@@ -27,8 +26,8 @@ class vqa_dataset(Dataset):
                 download_url(urls[f],ann_root)
                 self.annotation += json.load(open(os.path.join(ann_root,'%s.json'%f),'r'))
         else:
-            download_url('https://storage.googleapis.com/sfr-vision-language-research/datasets/vqa_test.json',ann_root)
-            self.annotation = json.load(open(os.path.join(ann_root,'vqa_test.json'),'r'))    
+            download_url('https://storage.googleapis.com/sfr-vision-language-research/datasets/vqa_val.json',ann_root)
+            self.annotation = json.load(open(os.path.join(ann_root,'vqa_val.json'),'r'))    
             
             # download_url('https://storage.googleapis.com/sfr-vision-language-research/datasets/answer_list.json',ann_root)
             # self.answer_list = json.load(open(os.path.join(ann_root,'answer_list.json'),'r'))    

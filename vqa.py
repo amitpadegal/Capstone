@@ -5,6 +5,10 @@ from transformers import BertTokenizer
 import numpy as np
 from med import BertConfig, BertModel, BertLMHeadModel
 from blip import create_vit, init_tokenizer, load_checkpoint
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import normalize
+from sklearn.cluster import KMeans
+from rus import *
 
 class BLIP_VQA(nn.Module):
     def __init__(self,                 
@@ -21,7 +25,7 @@ class BLIP_VQA(nn.Module):
             vit (str): model size of vision transformer
         """               
         super().__init__()
-        
+        self.n_components = 10
         self.visual_encoder, vision_width = create_vit(vit, image_size, vit_grad_ckpt, vit_ckpt_layer, drop_path_rate=0.1)
         self.tokenizer = init_tokenizer()  
         
@@ -33,7 +37,7 @@ class BLIP_VQA(nn.Module):
         self.text_decoder = BertLMHeadModel(config=decoder_config)          
 
 
-    def forward(self, image, question, answer=None, n=None, weights=None, train=True, inference='generate', k_test=128):
+    def forward(self, image, question, answer=None, n=None, weights=None, train=False, inference='generate', k_test=128):
         with open('temp_data.txt', 'a') as f:  # 'a' mode to append
             f.write("Input Image Shape: {}\n".format(image.shape))
             f.write("Input Question: {}\n".format(question))
@@ -85,7 +89,7 @@ class BLIP_VQA(nn.Module):
             
 
         else: 
-            question_output = self.text_encoder(question.input_ids, 
+            question_output, question_emb = self.text_encoder(question.input_ids, 
                                                 attention_mask = question.attention_mask, 
                                                 encoder_hidden_states = image_embeds,
                                                 encoder_attention_mask = image_atts,                                    
@@ -95,6 +99,17 @@ class BLIP_VQA(nn.Module):
 
                 # question_states = question_output.last_hidden_state.repeat_interleave(num_beams,dim=0)
                 question_states = question_output.last_hidden_state
+                image_tmp, question_tmp, question_states_tmp = image_embeds.squeeze(0), question_emb.squeeze(0), question_states.squeeze(0)
+                image_tmp = cluster_embeddings(image_tmp, question_tmp.shape[0])
+                kmeans_im, data_im = clustering(image_tmp, pca=True, n_components=self.n_components, n_clusters=10)
+                kmeans_txt, data_txt = clustering(question_tmp, pca=True, n_components=self.n_components, n_clusters=10)
+                kmeans_out, data_out = clustering(question_states_tmp, pca=True, n_components=self.n_components, n_clusters=10)
+                print(kmeans_im.size, kmeans_txt.size, kmeans_out.size)
+                kmeans_im, kmeans_txt, kmeans_out = kmeans_im.reshape(-1, 1), kmeans_txt.reshape(-1, 1), kmeans_out.reshape(-1, 1)
+                P, maps = convert_data_to_distribution(kmeans_im, kmeans_txt, kmeans_out)
+                res = get_measure(P)
+                # print(res)
+
                 question_atts = torch.ones(question_states.size()[:-1],dtype=torch.long).to(question_states.device)
                 model_kwargs = {"encoder_hidden_states": question_states, "encoder_attention_mask":question_atts}
                 
@@ -187,4 +202,40 @@ def tile(x, dim, n_tile):
     order_index = torch.LongTensor(np.concatenate([init_dim * np.arange(n_tile) + i for i in range(init_dim)]))
     return torch.index_select(x, dim, order_index.to(x.device))    
         
-        
+def clustering(X, pca=False, n_clusters=10, n_components=5):
+    # print(X.shape)
+    if not isinstance(X, np.ndarray):
+        X = X.detach().numpy()
+    X = np.nan_to_num(X)
+    if len(X.shape) > 2:
+        X = X.reshape(X.shape[0],-1)
+    if pca:
+        # print(np.any(np.isnan(X)), np.all(np.isfinite(X)))
+        X = normalize(X)
+        X = PCA(n_components=n_components).fit_transform(X)
+    kmeans = KMeans(n_clusters=n_clusters).fit(X)
+    return kmeans.labels_, X
+
+def cluster_embeddings(embeddings, target_samples):
+    """
+    Reduce the number of samples in embeddings using K-Means clustering.
+    
+    Parameters:
+        embeddings (np.ndarray): Input embeddings of shape (num_samples, num_features).
+        target_samples (int): Desired number of samples after clustering.
+
+    Returns:
+        np.ndarray: Cluster centroids representing reduced embeddings.
+    """
+    
+    num_samples = embeddings.shape[0]
+    
+    if num_samples <= target_samples:
+        return embeddings  # No clustering needed
+    
+    # Apply K-Means clustering
+    kmeans = KMeans(n_clusters=target_samples, random_state=42, n_init=10)
+    embeddings = embeddings.detach().numpy()
+    kmeans.fit(embeddings)
+    
+    return kmeans.cluster_centers_  # Use centroids as reduced samples

@@ -6,3 +6,6 @@ numpy
 ruamel_yaml
 opencv-python
 matplotlib
+cvxpy
+scikit-learn
+
