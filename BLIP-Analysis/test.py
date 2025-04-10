@@ -33,17 +33,12 @@ def calculate_pid(input1, input2, output):
 def calculate_modality_dependence(res):
     redundancy, uniqueness1, uniqueness2, synergy = res['redundancy'], res['unique1'], res['unique2'], res['synergy']
     total = redundancy + uniqueness1 + uniqueness2 + synergy
-    # modality1 = redundancy + uniqueness1
-    # modality2 = redundancy + uniqueness2
 
     dependence1 = uniqueness1 / total
     dependence2 = uniqueness2 / total
     tot = dependence1 + dependence2
     dep1 = dependence1/tot
     dep2 = dependence2/tot
-    # tot_u = uniqueness1 + uniqueness2
-    # un1 = uniqueness1/tot_u
-    # un2 = uniqueness2/tot_u
 
     return dep1, dep2
 

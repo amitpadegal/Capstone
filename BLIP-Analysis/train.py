@@ -108,7 +108,7 @@ def evaluation(model, data_loader, device, config) :
             for ques_id, answer_id in zip(question_id, answer_ids):
                 result.append({"question_id":int(ques_id.item()), "answer":answer_list[answer_id]}) 
         
-        if n == 2:
+        if n == 10:
             break
 
     return result
