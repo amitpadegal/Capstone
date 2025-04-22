@@ -101,9 +101,10 @@ class BLIP_VQA(nn.Module):
                 question_states = question_output.last_hidden_state
                 image_tmp, question_tmp, question_states_tmp = image_embeds.squeeze(0), question_emb.squeeze(0), question_states.squeeze(0)
                 image_tmp = cluster_embeddings(image_tmp, question_tmp.shape[0])
-                kmeans_im, data_im = clustering(image_tmp, pca=True, n_components=self.n_components, n_clusters=10)
-                kmeans_txt, data_txt = clustering(question_tmp, pca=True, n_components=self.n_components, n_clusters=10)
-                kmeans_out, data_out = clustering(question_states_tmp, pca=True, n_components=self.n_components, n_clusters=10)
+                self.n_components = (question_tmp.shape[0] // 2) + 1
+                kmeans_im, data_im = clustering(image_tmp, pca=True, n_components=self.n_components, n_clusters=self.n_components)
+                kmeans_txt, data_txt = clustering(question_tmp, pca=True, n_components=self.n_components, n_clusters=self.n_components)
+                kmeans_out, data_out = clustering(question_states_tmp, pca=True, n_components=self.n_components, n_clusters=self.n_components)
                 print(kmeans_im.size, kmeans_txt.size, kmeans_out.size)
                 kmeans_im, kmeans_txt, kmeans_out = kmeans_im.reshape(-1, 1), kmeans_txt.reshape(-1, 1), kmeans_out.reshape(-1, 1)
                 P, maps = convert_data_to_distribution(kmeans_im, kmeans_txt, kmeans_out)
@@ -127,7 +128,7 @@ class BLIP_VQA(nn.Module):
                 for output in outputs:
                     answer = self.tokenizer.decode(output, skip_special_tokens=True)    
                     answers.append(answer)
-                return answers
+                return answers, res
             
             elif inference=='rank':
                 max_ids = self.rank_answer(question_output.last_hidden_state, question.attention_mask, 

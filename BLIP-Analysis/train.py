@@ -15,6 +15,7 @@ import datetime
 import json
 from pathlib import Path
 import matplotlib.pyplot as plt
+from test import calculate_modality_dependence
 
 import torch
 import torch.nn as nn
@@ -86,6 +87,7 @@ def evaluation(model, data_loader, device, config) :
     print_freq = 50
     
     result = []
+    bias1, bias2 = 0, 0
     
     if config['inference']=='rank':   
         answer_list = data_loader.dataset.answer_list
@@ -96,7 +98,11 @@ def evaluation(model, data_loader, device, config) :
         image = image.to(device,non_blocking=True)             
 
         if config['inference']=='generate':
-            answers = model(image, question, train=False, inference='generate') 
+            answers, res = model(image, question, train=False, inference='generate') 
+
+            dep1, dep2 = calculate_modality_dependence(res)
+            bias1 += dep1
+            bias2 += dep2
             
             for answer, ques_id in zip(answers, question_id):
                 ques_id = int(ques_id.item())       
@@ -108,7 +114,16 @@ def evaluation(model, data_loader, device, config) :
             for ques_id, answer_id in zip(question_id, answer_ids):
                 result.append({"question_id":int(ques_id.item()), "answer":answer_list[answer_id]}) 
         
-        if n == 10:
+        if n == 1000:
+            print("Bias 1:", bias1/(n+1))
+            print("Bias 2:", bias2/(n+1))
+            data = {
+    "bias1": bias1 / (n + 1),
+    "bias2": bias2 / (n + 1)
+}
+
+            with open("blip_vqa.jsonl", 'a') as f:
+                f.write(json.dumps(data) + "\n")
             break
 
     return result

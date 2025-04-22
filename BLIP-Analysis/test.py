@@ -112,7 +112,7 @@ def train_and_evaluate_model(data):
 
 # Main execution
 synthetic_data = generate_synthetic_data()
-train_and_evaluate_model(synthetic_data)
+# train_and_evaluate_model(synthetic_data)
 
 # Calculate PID and dependence
 # redundancy, uniqueness1, uniqueness2, synergy = calculate_pid(input1_test, input2_test, output_test)

@@ -2,6 +2,7 @@ import cvxpy as cp
 # from cvxpy import *
 import numpy as np
 from scipy.special import rel_entr
+import json
 
 def solve_Q_new(P: np.ndarray):
     '''
@@ -166,5 +167,8 @@ def get_measure(P):
     print('Unique 2:', unique_2)
     synergy = CI(P, Q)
     print('Synergy:', synergy)
+    with open("blip_vqa.txt", 'a') as f:
+      data = {'redundancy': redundancy, 'unique1': unique_1, 'unique2': unique_2, 'synergy': synergy}
+      f.write(json.dumps(data, indent=2))
     return {'redundancy':redundancy, 'unique1':unique_1, 'unique2':unique_2, 'synergy':synergy}
 
