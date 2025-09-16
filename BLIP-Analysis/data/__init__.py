@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.transforms.functional import InterpolationMode
 
+from data.gqa_dataset import GQADataset
 from data.coco_karpathy_dataset import coco_karpathy_train, coco_karpathy_caption_eval, coco_karpathy_retrieval_eval
 from data.nocaps_dataset import nocaps_eval
 from data.flickr30k_dataset import flickr30k_train, flickr30k_retrieval_eval
@@ -68,6 +69,16 @@ def create_dataset(dataset, config, min_scale=0.5):
         test_dataset = nlvr_dataset(transform_test, config['image_root'], config['ann_root'],'test')     
         return train_dataset, val_dataset, test_dataset   
     
+    elif dataset=='gqa':
+        test_dataset = GQADataset(
+        gqa_json_path='/Users/amitpadegal/Desktop/Capstone/BLIP-Analysis/annotation/vg_qa.json',
+        image_root='/Users/amitpadegal/Downloads/',
+        transform=transform_test,
+        max_samples=1000,
+        seed=42
+    )
+        return test_dataset
+    
     
 def create_sampler(datasets, shuffles, num_tasks, global_rank):
     samplers = []
@@ -79,7 +90,9 @@ def create_sampler(datasets, shuffles, num_tasks, global_rank):
 
 def create_loader(datasets, samplers, batch_size, num_workers, is_trains, collate_fns):
     loaders = []
+    print("dataset length:", len(datasets))
     for dataset,sampler,bs,n_worker,is_train,collate_fn in zip(datasets,samplers,batch_size,num_workers,is_trains,collate_fns):
+        print("dataset length:", len(dataset))
         if is_train:
             shuffle = (sampler is None)
             drop_last = True

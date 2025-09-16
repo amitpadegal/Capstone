@@ -30,6 +30,7 @@ from utils import cosine_lr_schedule
 from data import create_dataset, create_sampler, create_loader
 from data.vqa_dataset import vqa_collate_fn
 from data.utils import save_result
+from data.gqa_dataset import GQADataset
 
 
 def train(model, data_loader, optimizer, epoch, device):
@@ -95,9 +96,11 @@ def evaluation(model, data_loader, device, config) :
         answer_candidates.input_ids[:,0] = model.tokenizer.bos_token_id
         
     for n, (image, question, question_id) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):        
+        print(n, image.shape if hasattr(image, "shape") else len(image))
         image = image.to(device,non_blocking=True)             
 
         if config['inference']=='generate':
+            print(n)
             answers, res = model(image, question, train=False, inference='generate') 
 
             dep1, dep2 = calculate_modality_dependence(res)
@@ -143,7 +146,8 @@ def main(args, config):
     
     #### Dataset #### 
     print("Creating vqa datasets")
-    datasets = create_dataset('vqa', config)   
+    datasets = create_dataset('gqa', config) 
+    print(len(datasets))
     
     if args.distributed:
         num_tasks = utils.get_world_size()
@@ -155,7 +159,12 @@ def main(args, config):
     train_loader, test_loader = create_loader(datasets,samplers,
                                               batch_size=[config['batch_size_train'],config['batch_size_test']],
                                               num_workers=[4,4],is_trains=[True, False], 
-                                              collate_fns=[vqa_collate_fn,None]) 
+                                              collate_fns=[vqa_collate_fn,None])
+    # [test_loader] = create_loader([datasets],[None],
+    #                                           batch_size=[config['batch_size_test']],
+    #                                           num_workers=[4],is_trains=[False], 
+    #                                           collate_fns=[None])
+
     #### Model #### 
     print("Creating model")
     model = blip_vqa(pretrained=config['pretrained'], image_size=config['image_size'], 
