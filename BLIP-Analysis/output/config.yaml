@@ -1,11 +1,11 @@
-vqa_root: C:\Users\ccbdp\Downloads\BLIP-Analysis\dataset   #followed by train2014/
-vg_root: C:\Users\ccbdp\Downloads\BLIP-Analysis\dataset    #followed by image/
+vqa_root: /Users/amitpadegal/Downloads   #followed by train2014/
+vg_root: /Users/amitpadegal/Downloads    #followed by image/
 train_files: [vqa_train, vg_qa]
 ann_root: annotation
 
 # set pretrained as a file path or an url
 # pretrained: 'https://storage.googleapis.com/sfr-vision-language-research/BLIP/models/model_base_vqa_capfilt_large.pth'
-pretrained: C:\Users\ccbdp\Downloads\BLIP-Analysis\model_vqa.pth
+pretrained: model_vqa.pth
 # size of vit model; base or large
 vit: base
 batch_size_train: 16
