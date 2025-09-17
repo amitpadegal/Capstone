@@ -146,7 +146,7 @@ def main(args, config):
     
     #### Dataset #### 
     print("Creating vqa datasets")
-    datasets = create_dataset('gqa', config) 
+    datasets = create_dataset('vqa', config) 
     print(len(datasets))
     
     if args.distributed:

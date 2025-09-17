@@ -17,7 +17,7 @@ init_lr: 2e-5
 image_size: 480
 
 k_test: 128
-inference: generate
+inference: rank
 
 # optimizer
 weight_decay: 0.05

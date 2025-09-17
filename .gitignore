@@ -5,3 +5,4 @@ model_base_14M.pth
 model_vqa.pth
 annotation
 images
+vqa_sample
