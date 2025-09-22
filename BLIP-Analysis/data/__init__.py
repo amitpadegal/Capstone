@@ -58,10 +58,10 @@ def create_dataset(dataset, config, min_scale=0.5):
         return train_dataset, val_dataset, test_dataset     
     
     elif dataset=='vqa': 
-        train_dataset = vqa_dataset(transform_train, config['ann_root'], config['vqa_root'], config['vg_root'], 
-                                    train_files = config['train_files'], split='train') 
+        # train_dataset = vqa_dataset(transform_train, config['ann_root'], config['vqa_root'], config['vg_root'], 
+        #                             train_files = config['train_files'], split='train') 
         test_dataset = vqa_dataset(transform_test, config['ann_root'], config['vqa_root'], config['vg_root'], split='test')
-        return train_dataset, test_dataset
+        return test_dataset
     
     elif dataset=='nlvr': 
         train_dataset = nlvr_dataset(transform_train, config['image_root'], config['ann_root'],'train')
@@ -71,8 +71,8 @@ def create_dataset(dataset, config, min_scale=0.5):
     
     elif dataset=='gqa':
         test_dataset = GQADataset(
-        gqa_json_path='/Users/amitpadegal/Desktop/Capstone/BLIP-Analysis/annotation/vg_qa.json',
-        image_root='/Users/amitpadegal/Downloads/',
+        gqa_json_path='/Users/amitpadegal/Desktop/Capstone/gqa_20k_subset.json',
+        image_root='/Users/amitpadegal/Desktop/Capstone/gqa_sample/',
         transform=transform_test,
         max_samples=1000,
         seed=42

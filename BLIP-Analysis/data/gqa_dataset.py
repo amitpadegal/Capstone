@@ -38,7 +38,8 @@ class GQADataset(Dataset):
         sample = self.samples[idx]
         
         # Load image
-        image_path = os.path.join(self.image_root, sample["image_file"])
+        img_path = sample['image_file'].split('/')[1]
+        image_path = os.path.join(self.image_root, img_path)
         image = Image.open(image_path).convert("RGB")
         if self.transform is not None:
             image = self.transform(image)

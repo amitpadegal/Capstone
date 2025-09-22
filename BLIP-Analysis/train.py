@@ -146,7 +146,7 @@ def main(args, config):
     
     #### Dataset #### 
     print("Creating vqa datasets")
-    datasets = create_dataset('vqa', config) 
+    datasets = create_dataset('gqa', config) 
     print(len(datasets))
     
     if args.distributed:
@@ -156,14 +156,14 @@ def main(args, config):
     else:
         samplers = [None, None]
     
-    train_loader, test_loader = create_loader(datasets,samplers,
-                                              batch_size=[config['batch_size_train'],config['batch_size_test']],
-                                              num_workers=[4,4],is_trains=[True, False], 
-                                              collate_fns=[vqa_collate_fn,None])
-    # [test_loader] = create_loader([datasets],[None],
-    #                                           batch_size=[config['batch_size_test']],
-    #                                           num_workers=[4],is_trains=[False], 
-    #                                           collate_fns=[None])
+    # train_loader, test_loader = create_loader(datasets,samplers,
+    #                                           batch_size=[config['batch_size_train'],config['batch_size_test']],
+    #                                           num_workers=[4,4],is_trains=[True, False], 
+    #                                           collate_fns=[vqa_collate_fn,None])
+    [test_loader] = create_loader([datasets],[None],
+                                              batch_size=[config['batch_size_test']],
+                                              num_workers=[4],is_trains=[False], 
+                                              collate_fns=[None])
 
     #### Model #### 
     print("Creating model")
