@@ -90,9 +90,9 @@ def create_sampler(datasets, shuffles, num_tasks, global_rank):
 
 def create_loader(datasets, samplers, batch_size, num_workers, is_trains, collate_fns):
     loaders = []
-    print("dataset length:", len(datasets))
+    # print("dataset length:", len(datasets))
     for dataset,sampler,bs,n_worker,is_train,collate_fn in zip(datasets,samplers,batch_size,num_workers,is_trains,collate_fns):
-        print("dataset length:", len(dataset))
+        # print("dataset length:", len(dataset))
         if is_train:
             shuffle = (sampler is None)
             drop_last = True

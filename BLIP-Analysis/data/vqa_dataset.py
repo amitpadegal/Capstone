@@ -17,17 +17,18 @@ class vqa_dataset(Dataset):
         self.vqa_root = vqa_root
         self.vg_root = vg_root
         
-        if split=='train':
-            urls = {'vqa_train':'https://storage.googleapis.com/sfr-vision-language-research/datasets/vqa_train.json',
-                    'vg_qa':'https://storage.googleapis.com/sfr-vision-language-research/datasets/vg_qa.json'}
+        self.annotation = json.load(open('/Users/amitpadegal/Desktop/Capstone/vqa_20k_subset.json','r'))
+        # if split=='train':
+        #     urls = {'vqa_train':'https://storage.googleapis.com/sfr-vision-language-research/datasets/vqa_train.json',
+        #             'vg_qa':'https://storage.googleapis.com/sfr-vision-language-research/datasets/vg_qa.json'}
         
-            self.annotation = []
-            for f in train_files:
-                download_url(urls[f],ann_root)
-                self.annotation += json.load(open(os.path.join(ann_root,'%s.json'%f),'r'))
-        else:
-            download_url('https://storage.googleapis.com/sfr-vision-language-research/datasets/vqa_val.json',ann_root)
-            self.annotation = json.load(open(os.path.join(ann_root,'vqa_val.json'),'r'))    
+        #     self.annotation = []
+        #     for f in train_files:
+        #         download_url(urls[f],ann_root)
+        #         self.annotation += json.load(open(os.path.join(ann_root,'%s.json'%f),'r'))
+        # else:
+        #     download_url('https://storage.googleapis.com/sfr-vision-language-research/datasets/vqa_val.json',ann_root)
+        #     self.annotation = json.load(open(os.path.join(ann_root,'vqa_val.json'),'r'))    
             
             # download_url('https://storage.googleapis.com/sfr-vision-language-research/datasets/answer_list.json',ann_root)
             # self.answer_list = json.load(open(os.path.join(ann_root,'answer_list.json'),'r'))    
@@ -39,11 +40,12 @@ class vqa_dataset(Dataset):
     def __getitem__(self, index):    
         
         ann = self.annotation[index]
-        
-        if ann['dataset']=='vqa':
-            image_path = os.path.join(self.vqa_root,ann['image'])    
-        elif ann['dataset']=='vg':
-            image_path = os.path.join(self.vg_root,ann['image'])  
+        temp = ann['image'].split('/')[1]
+        # if ann['dataset']=='vqa':
+        #     image_path = os.path.join(self.vqa_root,ann['image'])    
+        # elif ann['dataset']=='vg':
+        #     image_path = os.path.join(self.vg_root,ann['image'])  
+        image_path = os.path.join(self.vqa_root,temp)
             
         image = Image.open(image_path).convert('RGB')   
         image = self.transform(image)          
@@ -54,26 +56,26 @@ class vqa_dataset(Dataset):
             return image, question, question_id
 
 
-        elif self.split=='train':                       
+        # elif self.split=='train':                       
             
-            question = pre_question(ann['question'])        
+        #     question = pre_question(ann['question'])        
             
-            if ann['dataset']=='vqa':               
-                answer_weight = {}
-                for answer in ann['answer']:
-                    if answer in answer_weight.keys():
-                        answer_weight[answer] += 1/len(ann['answer'])
-                    else:
-                        answer_weight[answer] = 1/len(ann['answer'])
+        #     if ann['dataset']=='vqa':               
+        #         answer_weight = {}
+        #         for answer in ann['answer']:
+        #             if answer in answer_weight.keys():
+        #                 answer_weight[answer] += 1/len(ann['answer'])
+        #             else:
+        #                 answer_weight[answer] = 1/len(ann['answer'])
 
-                answers = list(answer_weight.keys())
-                weights = list(answer_weight.values())
+        #         answers = list(answer_weight.keys())
+        #         weights = list(answer_weight.values())
 
-            elif ann['dataset']=='vg':
-                answers = [ann['answer']]
-                weights = [0.2]  
+        #     elif ann['dataset']=='vg':
+        #         answers = [ann['answer']]
+        #         weights = [0.2]  
 
-            return image, question, answers, weights
+        #     return image, question, answers, weights
         
         
 def vqa_collate_fn(batch):

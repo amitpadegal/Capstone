@@ -1,4 +1,4 @@
-vqa_root: '/Users/amitpadegal/Downloads' #followed by train2014/
+vqa_root: '/Users/amitpadegal/Desktop/Capstone/vqa_sample' #followed by train2014/
 vg_root: '/Users/amitpadegal/Downloads'  #followed by image/
 train_files: ['vqa_train','vg_qa']
 ann_root: 'annotation'
