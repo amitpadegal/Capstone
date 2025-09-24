@@ -121,9 +121,9 @@ def evaluation(model, data_loader, device, config) :
             print("Bias 1:", bias1/(n+1))
             print("Bias 2:", bias2/(n+1))
             data = {
-    "bias1": bias1 / (n + 1),
-    "bias2": bias2 / (n + 1)
-}
+                "bias1": bias1 / (n + 1),
+                "bias2": bias2 / (n + 1)
+            }
 
             with open("blip_vqa.jsonl", 'a') as f:
                 f.write(json.dumps(data) + "\n")
