@@ -75,7 +75,7 @@ def create_dataset(dataset, config, min_scale=0.5):
         gqa_json_path='/Users/amitpadegal/Desktop/Capstone/gqa_20k_subset.json',
         image_root='/Users/amitpadegal/Desktop/Capstone/gqa_sample/',
         transform=transform_test,
-        max_samples=1000,
+        max_samples=5000,
         seed=42
     )
         return test_dataset

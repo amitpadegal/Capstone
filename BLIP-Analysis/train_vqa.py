@@ -31,6 +31,7 @@ from data import create_dataset, create_sampler, create_loader
 from data.vqa_dataset import vqa_collate_fn
 from data.utils import save_result
 from data.gqa_dataset import GQADataset
+import pandas as pd
 
 
 def train(model, data_loader, optimizer, epoch, device):
@@ -103,13 +104,31 @@ def evaluation(model, data_loader, device, config) :
             print(n)
             answers, res = model(image, question, train=False, inference='generate') 
 
-            dep1, dep2 = calculate_modality_dependence(res)
-            bias1 += dep1
-            bias2 += dep2
+            out = calculate_modality_dependence(res)
+            bias1 += out['dependence1']
+            bias2 += out['dependence2']
             
             for answer, ques_id in zip(answers, question_id):
                 ques_id = int(ques_id.item())       
-                result.append({"question_id":ques_id, "answer":answer})             
+                result.append({"question_id":ques_id, "answer":answer}) 
+            
+            row = {
+                "question_id": question_id,
+                # Orig
+                "bias1": out["dependence1"],
+                "bias2": out["dependence2"],
+                "redundancy": out["redundancy"],
+                "unique1": out["unique1"],
+                "unique2": out["unique2"],
+                "synergy": out["synergy"],
+            }
+
+            # Save DataFrame to CSV after all rows are processed
+                
+            # Append to a DataFrame (initialize df outside loop if needed)
+            if 'df' not in locals():
+                df = pd.DataFrame(columns=row.keys())
+            df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
             
         elif config['inference']=='rank':    
             answer_ids = model(image, question, answer_candidates, train=False, inference='rank', k_test=config['k_test'])      
@@ -117,15 +136,15 @@ def evaluation(model, data_loader, device, config) :
             for ques_id, answer_id in zip(question_id, answer_ids):
                 result.append({"question_id":int(ques_id.item()), "answer":answer_list[answer_id]}) 
         
-        if n == 1000:
+        if n == 5:
             print("Bias 1:", bias1/(n+1))
             print("Bias 2:", bias2/(n+1))
             data = {
                 "bias1": bias1 / (n + 1),
                 "bias2": bias2 / (n + 1)
             }
-
-            with open("blip_vqa.jsonl", 'a') as f:
+            df.to_csv("vqa_results.csv", index=False)
+            with open("blip_vqa.jsonl", 'w') as f:
                 f.write(json.dumps(data) + "\n")
             break
 
@@ -146,7 +165,7 @@ def main(args, config):
     
     #### Dataset #### 
     print("Creating vqa datasets")
-    datasets = create_dataset('gqa', config) 
+    datasets = create_dataset('vqa', config) 
     print(len(datasets))
     
     if args.distributed:
@@ -192,48 +211,48 @@ def main(args, config):
     print("Start training")
     # print(args.evaluate)
     start_time = time.time()    
-    for epoch in range(0, config['max_epoch']):
-        if not args.evaluate:        
-            if args.distributed:
-                train_loader.sampler.set_epoch(epoch)
+    # for epoch in range(0, config['max_epoch']):
+    #     if not args.evaluate:        
+    #         if args.distributed:
+    #             train_loader.sampler.set_epoch(epoch)
                 
-            cosine_lr_schedule(optimizer, epoch, config['max_epoch'], config['init_lr'], config['min_lr'])
+    #         cosine_lr_schedule(optimizer, epoch, config['max_epoch'], config['init_lr'], config['min_lr'])
                 
-            train_stats, (image_grad_accumulator, text_grad_accumulator, total_batches) = train(model, train_loader, optimizer, epoch, device)
-            image_grad_magnitude = image_grad_accumulator / total_batches
-            text_grad_magnitude = text_grad_accumulator / total_batches
+    #         train_stats, (image_grad_accumulator, text_grad_accumulator, total_batches) = train(model, train_loader, optimizer, epoch, device)
+    #         image_grad_magnitude = image_grad_accumulator / total_batches
+    #         text_grad_magnitude = text_grad_accumulator / total_batches
 
-            total_magnitude = image_grad_magnitude + text_grad_magnitude
-            a = image_grad_magnitude / total_magnitude
-            b = text_grad_magnitude / total_magnitude
+    #         total_magnitude = image_grad_magnitude + text_grad_magnitude
+    #         a = image_grad_magnitude / total_magnitude
+    #         b = text_grad_magnitude / total_magnitude
 
-            # Log the contributions for visualization
-            gradient_contributions.append((a, b))
-            print(f"Epoch {epoch+1}/{config['max_epoch']}: a (image contribution) = {a}, b (text contribution) = {b}")
+    #         # Log the contributions for visualization
+    #         gradient_contributions.append((a, b))
+    #         print(f"Epoch {epoch+1}/{config['max_epoch']}: a (image contribution) = {a}, b (text contribution) = {b}")
             
-            # Store the epoch-level accumulators for later analysis
-            epoch_image_grad_accumulator.append(image_grad_magnitude)
-            epoch_text_grad_accumulator.append(text_grad_magnitude) 
+    #         # Store the epoch-level accumulators for later analysis
+    #         epoch_image_grad_accumulator.append(image_grad_magnitude)
+    #         epoch_text_grad_accumulator.append(text_grad_magnitude) 
 
-        else:         
-            break        
+    #     else:         
+    #         break        
         
-        if utils.is_main_process():     
-            log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
-                         'epoch': epoch,
-                        }                
-            with open(os.path.join(args.output_dir, "log.txt"),"a") as f:
-                f.write(json.dumps(log_stats) + "\n")                        
+    #     if utils.is_main_process():     
+    #         log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
+    #                      'epoch': epoch,
+    #                     }                
+    #         with open(os.path.join(args.output_dir, "log.txt"),"a") as f:
+    #             f.write(json.dumps(log_stats) + "\n")                        
                     
-            save_obj = {
-                'model': model_without_ddp.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'config': config,
-                'epoch': epoch,
-            }
-            torch.save(save_obj, os.path.join(args.output_dir, 'checkpoint_%02d.pth'%epoch))  
+    #         save_obj = {
+    #             'model': model_without_ddp.state_dict(),
+    #             'optimizer': optimizer.state_dict(),
+    #             'config': config,
+    #             'epoch': epoch,
+    #         }
+    #         torch.save(save_obj, os.path.join(args.output_dir, 'checkpoint_%02d.pth'%epoch))  
 
-        dist.barrier()     
+    #     dist.barrier()     
     # epochs = list(range(1, config['max_epoch'] + 1))
     # a_values, b_values = zip(*gradient_contributions)
 
@@ -248,11 +267,11 @@ def main(args, config):
     # plt.show()
 
     vqa_result = evaluation(model_without_ddp, test_loader, device, config)        
-    result_file = save_result(vqa_result, args.result_dir, 'vqa_result')  
+    # result_file = save_result(vqa_result, args.result_dir, 'vqa_result')  
                       
-    total_time = time.time() - start_time
-    total_time_str = str(datetime.timedelta(seconds=int(total_time)))
-    print('Training time {}'.format(total_time_str)) 
+    # total_time = time.time() - start_time
+    # total_time_str = str(datetime.timedelta(seconds=int(total_time)))
+    # print('Training time {}'.format(total_time_str)) 
     
             
 

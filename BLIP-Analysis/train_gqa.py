@@ -89,53 +89,38 @@ def evaluation(model, data_loader, device, config) :
     print_freq = 50
     
     result = []
-    bias1_o, bias2_o = 0, 0
-    bias1_f, bias2_f = 0, 0
-    bias1_r, bias2_r = 0, 0
+    bias1, bias2 = 0, 0
     
     if config['inference']=='rank':   
         answer_list = data_loader.dataset.answer_list
         answer_candidates = model.tokenizer(answer_list, padding='longest', return_tensors='pt').to(device)    
         answer_candidates.input_ids[:,0] = model.tokenizer.bos_token_id
         
-    for n, (image, orig_cap, foil_cap, random_cap, foil_id) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):        
+    for n, (image, question, question_id) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):        
         print(n, image.shape if hasattr(image, "shape") else len(image))
         image = image.to(device,non_blocking=True)             
 
         if config['inference']=='generate':
             print(n)
-            answers_orig, res_orig = model(image, orig_cap, train=False, inference='generate')
-            answers_foil, res_foil = model(image, foil_cap, train=False, inference='generate')
-            answers_rand, res_rand = model(image, random_cap, train=False, inference='generate') 
+            answers, res = model(image, question, train=False, inference='generate') 
 
-            out_o = calculate_modality_dependence(res_orig)
-            out_f = calculate_modality_dependence(res_foil)
-            out_r = calculate_modality_dependence(res_rand)
-
-            # Collect all 18 values for this foil_id (6 metrics × 3 conditions)
+            out = calculate_modality_dependence(res)
+            bias1 += out['dependence1']
+            bias2 += out['dependence2']
+            
+            for answer, ques_id in zip(answers, question_id):
+                ques_id = int(ques_id.item())       
+                result.append({"question_id":ques_id, "answer":answer}) 
+            
             row = {
-                "foil_id": foil_id,
+                "question_id": question_id,
                 # Orig
-                "bias1_orig": out_o["dependence1"],
-                "bias2_orig": out_o["dependence2"],
-                "redundancy_orig": out_o["redundancy"],
-                "unique1_orig": out_o["unique1"],
-                "unique2_orig": out_o["unique2"],
-                "synergy_orig": out_o["synergy"],
-                # Foil
-                "bias1_foil": out_f["dependence1"],
-                "bias2_foil": out_f["dependence2"],
-                "redundancy_foil": out_f["redundancy"],
-                "unique1_foil": out_f["unique1"],
-                "unique2_foil": out_f["unique2"],
-                "synergy_foil": out_f["synergy"],
-                # Rand
-                "bias1_rand": out_r["dependence1"],
-                "bias2_rand": out_r["dependence2"],
-                "redundancy_rand": out_r["redundancy"],
-                "unique1_rand": out_r["unique1"],
-                "unique2_rand": out_r["unique2"],
-                "synergy_rand": out_r["synergy"],
+                "bias1": out["dependence1"],
+                "bias2": out["dependence2"],
+                "redundancy": out["redundancy"],
+                "unique1": out["unique1"],
+                "unique2": out["unique2"],
+                "synergy": out["synergy"],
             }
 
             # Save DataFrame to CSV after all rows are processed
@@ -144,44 +129,22 @@ def evaluation(model, data_loader, device, config) :
             if 'df' not in locals():
                 df = pd.DataFrame(columns=row.keys())
             df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
-
-            bias1_o += out_o["dependence1"] 
-            bias2_o += out_o["dependence2"]
-
-            bias1_f += out_f["dependence1"]
-            bias2_f += out_f["dependence2"]
-
-            bias1_r += out_r["dependence1"]
-            bias2_r += out_r["dependence2"]
-
             
-            # for answer, ques_id in zip(answers, question_id):
-            #     ques_id = int(ques_id.item())       
-            #     result.append({"question_id":ques_id, "answer":answer})             
-            
-        # elif config['inference']=='rank':    
-        #     answer_ids = model(image, question, answer_candidates, train=False, inference='rank', k_test=config['k_test'])      
+        elif config['inference']=='rank':    
+            answer_ids = model(image, question, answer_candidates, train=False, inference='rank', k_test=config['k_test'])      
 
-        #     for ques_id, answer_id in zip(question_id, answer_ids):
-        #         result.append({"question_id":int(ques_id.item()), "answer":answer_list[answer_id]}) 
+            for ques_id, answer_id in zip(question_id, answer_ids):
+                result.append({"question_id":int(ques_id.item()), "answer":answer_list[answer_id]}) 
         
         if n == 1500:
-            print("Bias 1 Orig:", bias1_o/(n+1))
-            print("Bias 2 Orig:", bias2_o/(n+1))
-            print("Bias 1 Foil:", bias1_f/(n+1))
-            print("Bias 2 Foil:", bias2_f/(n+1))
-            print("Bias 1 Rand:", bias1_r/(n+1))
-            print("Bias 2 Rand:", bias2_r/(n+1))
+            print("Bias 1:", bias1/(n+1))
+            print("Bias 2:", bias2/(n+1))
             data = {
-                "bias1_orig": bias1_o / (n + 1),
-                "bias2_orig": bias2_o / (n + 1),
-                "bias1_foil": bias1_f / (n + 1),
-                "bias2_foil": bias2_f / (n + 1),
-                "bias1_rand": bias1_r / (n + 1),
-                "bias2_rand": bias2_r / (n + 1)
+                "bias1": bias1 / (n + 1),
+                "bias2": bias2 / (n + 1)
             }
-            df.to_csv("foil_metrics_results.csv", index=False)
-            with open("blip_vqa.jsonl", 'a') as f:
+            df.to_csv("gqa_results.csv", index=False)
+            with open("blip_gqa.jsonl", 'w') as f:
                 f.write(json.dumps(data) + "\n")
             break
 
@@ -202,7 +165,7 @@ def main(args, config):
     
     #### Dataset #### 
     print("Creating vqa datasets")
-    datasets = create_dataset('foil', config) 
+    datasets = create_dataset('gqa', config) 
     print(len(datasets))
     
     if args.distributed:
@@ -212,6 +175,10 @@ def main(args, config):
     else:
         samplers = [None, None]
     
+    # train_loader, test_loader = create_loader(datasets,samplers,
+    #                                           batch_size=[config['batch_size_train'],config['batch_size_test']],
+    #                                           num_workers=[4,4],is_trains=[True, False], 
+    #                                           collate_fns=[vqa_collate_fn,None])
     [test_loader] = create_loader([datasets],[None],
                                               batch_size=[config['batch_size_test']],
                                               num_workers=[4],is_trains=[False], 
@@ -244,7 +211,48 @@ def main(args, config):
     print("Start training")
     # print(args.evaluate)
     start_time = time.time()    
+    # for epoch in range(0, config['max_epoch']):
+    #     if not args.evaluate:        
+    #         if args.distributed:
+    #             train_loader.sampler.set_epoch(epoch)
+                
+    #         cosine_lr_schedule(optimizer, epoch, config['max_epoch'], config['init_lr'], config['min_lr'])
+                
+    #         train_stats, (image_grad_accumulator, text_grad_accumulator, total_batches) = train(model, train_loader, optimizer, epoch, device)
+    #         image_grad_magnitude = image_grad_accumulator / total_batches
+    #         text_grad_magnitude = text_grad_accumulator / total_batches
+
+    #         total_magnitude = image_grad_magnitude + text_grad_magnitude
+    #         a = image_grad_magnitude / total_magnitude
+    #         b = text_grad_magnitude / total_magnitude
+
+    #         # Log the contributions for visualization
+    #         gradient_contributions.append((a, b))
+    #         print(f"Epoch {epoch+1}/{config['max_epoch']}: a (image contribution) = {a}, b (text contribution) = {b}")
+            
+    #         # Store the epoch-level accumulators for later analysis
+    #         epoch_image_grad_accumulator.append(image_grad_magnitude)
+    #         epoch_text_grad_accumulator.append(text_grad_magnitude) 
+
+    #     else:         
+    #         break        
         
+    #     if utils.is_main_process():     
+    #         log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
+    #                      'epoch': epoch,
+    #                     }                
+    #         with open(os.path.join(args.output_dir, "log.txt"),"a") as f:
+    #             f.write(json.dumps(log_stats) + "\n")                        
+                    
+    #         save_obj = {
+    #             'model': model_without_ddp.state_dict(),
+    #             'optimizer': optimizer.state_dict(),
+    #             'config': config,
+    #             'epoch': epoch,
+    #         }
+    #         torch.save(save_obj, os.path.join(args.output_dir, 'checkpoint_%02d.pth'%epoch))  
+
+    #     dist.barrier()     
     # epochs = list(range(1, config['max_epoch'] + 1))
     # a_values, b_values = zip(*gradient_contributions)
 
