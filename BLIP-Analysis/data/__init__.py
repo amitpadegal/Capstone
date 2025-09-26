@@ -10,6 +10,7 @@ from data.flickr30k_dataset import flickr30k_train, flickr30k_retrieval_eval
 from data.vqa_dataset import vqa_dataset
 from data.nlvr_dataset import nlvr_dataset
 from data.pretrain_dataset import pretrain_dataset
+from data.foil_dataset import foil_dataset
 from tranform.randaugment import RandomAugment
 
 def create_dataset(dataset, config, min_scale=0.5):
@@ -77,6 +78,9 @@ def create_dataset(dataset, config, min_scale=0.5):
         max_samples=1000,
         seed=42
     )
+        return test_dataset
+    elif dataset=='foil':
+        test_dataset = foil_dataset(transform_test, split='test')
         return test_dataset
     
     

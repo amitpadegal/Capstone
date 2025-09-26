@@ -40,7 +40,14 @@ def calculate_modality_dependence(res):
     dep1 = dependence1/tot
     dep2 = dependence2/tot
 
-    return dep1, dep2
+    return {
+        "dependence1": dep1,
+        "dependence2": dep2,
+        "redundancy": redundancy,
+        "unique1": uniqueness1,
+        "unique2": uniqueness2,
+        "synergy": synergy
+    }
 
 def generate_synthetic_data(num_sets=10, rows=50, cols=100):
     """Generates 25 sets of synthetic data as lists of 2D NumPy arrays."""
