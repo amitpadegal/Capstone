@@ -11,6 +11,7 @@ from data.vqa_dataset import vqa_dataset
 from data.nlvr_dataset import nlvr_dataset
 from data.pretrain_dataset import pretrain_dataset
 from data.foil_dataset import foil_dataset
+from data.scienceqa_dataset import ScienceQADataset
 from tranform.randaugment import RandomAugment
 
 def create_dataset(dataset, config, min_scale=0.5):
@@ -81,6 +82,9 @@ def create_dataset(dataset, config, min_scale=0.5):
         return test_dataset
     elif dataset=='foil':
         test_dataset = foil_dataset(transform_test, split='test')
+        return test_dataset
+    elif dataset == 'scienceqa':
+        test_dataset = ScienceQADataset(transform_test, split='test')
         return test_dataset
     
     
