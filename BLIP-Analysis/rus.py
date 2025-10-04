@@ -1,7 +1,7 @@
 import cvxpy as cp
 # from cvxpy import *
 import numpy as np
-from scipy.special import rel_entr
+from scipy.special import rel_entr, logsumexp
 import json
 
 def solve_Q_new(P: np.ndarray):
@@ -61,7 +61,69 @@ def solve_Q_new(P: np.ndarray):
     #  print(Q[j].value)
 
     return np.stack([q.value for q in Q],axis=2)
+def alternating_minimization_ipfp(
+    P,
+    rng_seed: int = 42,
+    max_outer: int = 50,
+    max_sink: int = 100,
+    tol_outer: float = 1e-8,
+    tol_sink: float = 1e-8,
+    eps: float = 1e-20
+):
 
+    np.random.seed(rng_seed)
+    Py = P.sum(axis=0).sum(axis=0)
+    Px1 = P.sum(axis=1).sum(axis=1)
+    Px2 = P.sum(axis=0).sum(axis=1)
+    Px2y = P.sum(axis=0)
+    Px1y = P.sum(axis=1)
+    Px1y_given_x2 = P/P.sum(axis=(0,2),keepdims=True)
+
+    m, k = Px1y.shape
+    n, _ = Px2y.shape
+
+    py = Px1y.sum(axis=0)
+    if not np.allclose(py, Px2y.sum(axis=0)):
+        raise ValueError("Marginal distributions P(X1,Y) and P(X2,Y) are not consistent.")
+
+    Q = np.zeros((m, n, k))
+    for y in range(k):
+        if py[y] > eps:
+            Q[:, :, y] = np.outer(Px1y[:, y], Px2y[:, y]) / py[y]
+    Q = np.maximum(Q, eps)
+    Q /= Q.sum()
+    
+    prev_obj = np.inf
+
+    for t in range(max_outer):
+        Q_marg = Q.sum(axis=2) 
+        A = Q_marg / k
+        A_log = np.log(np.maximum(A, eps))
+        Q_new = np.zeros_like(Q)
+        for y in range(k):
+            if py[y] < eps:
+                continue
+            log_r = np.log(np.maximum(Px1y[:, y], eps))
+            log_c = np.log(np.maximum(Px2y[:, y], eps))
+            log_v = np.zeros(n)
+            for s in range(max_sink):
+                log_u_prev = log_v 
+                log_u = log_r - logsumexp(A_log + log_v[np.newaxis, :], axis=1)
+                log_v = log_c - logsumexp(A_log + log_u[:, np.newaxis], axis=0)
+                if s > 0 and np.max(np.abs(log_u - log_u_prev)) < tol_sink:
+                    break
+            
+            Q_new[:, :, y] = np.exp(A_log + log_u[:, np.newaxis] + log_v[np.newaxis, :])
+        
+        Q = np.maximum(Q_new, eps)
+        Q_marg_new = Q.sum(axis=2)
+        Q_tilde = np.repeat((Q_marg_new / k)[:, :, np.newaxis], k, axis=2)
+        obj = np.sum(Q * (np.log(Q + eps) - np.log(Q_tilde + eps)))
+        if t>0 and np.abs(prev_obj - obj) / max(1.0, np.abs(prev_obj)) < tol_outer:
+            break
+        prev_obj = obj
+
+    return Q
 def gen_binary_data(num_data):
   # 00  0
   # 01  0
@@ -156,9 +218,10 @@ def UI(P, cond_id=0):
 
   return sum
 
-def get_measure(P):
+def get_measure(P, file):
     np.random.seed(42)
-    Q = solve_Q_new(P)
+    # Q = solve_Q_new(P)
+    Q = alternating_minimization_ipfp(P)
     redundancy = CoI(Q)
     print('Redundancy:', redundancy)
     unique_1 = UI(Q, cond_id=1)
@@ -167,7 +230,7 @@ def get_measure(P):
     print('Unique 2:', unique_2)
     synergy = CI(P, Q)
     print('Synergy:', synergy)
-    with open("blip_vqa.txt", 'a') as f:
+    with open(file, 'a') as f:
       data = {'redundancy': redundancy, 'unique1': unique_1, 'unique2': unique_2, 'synergy': synergy}
       f.write(json.dumps(data, indent=2))
     return {'redundancy':redundancy, 'unique1':unique_1, 'unique2':unique_2, 'synergy':synergy}

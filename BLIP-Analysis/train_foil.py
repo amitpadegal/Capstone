@@ -104,9 +104,9 @@ def evaluation(model, data_loader, device, config) :
 
         if config['inference']=='generate':
             print(n)
-            answers_orig, res_orig = model(image, orig_cap, train=False, inference='generate')
-            answers_foil, res_foil = model(image, foil_cap, train=False, inference='generate')
-            answers_rand, res_rand = model(image, random_cap, train=False, inference='generate') 
+            answers_orig, res_orig = model(image, orig_cap, "blip_foil_orig.json",train=False, inference='generate')
+            answers_foil, res_foil = model(image, foil_cap,"blip_foil_foil.json", train=False, inference='generate')
+            answers_rand, res_rand = model(image, random_cap, "blip_foil_rand.json",train=False, inference='generate') 
 
             out_o = calculate_modality_dependence(res_orig)
             out_f = calculate_modality_dependence(res_foil)
@@ -165,7 +165,7 @@ def evaluation(model, data_loader, device, config) :
         #     for ques_id, answer_id in zip(question_id, answer_ids):
         #         result.append({"question_id":int(ques_id.item()), "answer":answer_list[answer_id]}) 
         
-        if n == 1500:
+        if n == 5:
             print("Bias 1 Orig:", bias1_o/(n+1))
             print("Bias 2 Orig:", bias2_o/(n+1))
             print("Bias 1 Foil:", bias1_f/(n+1))

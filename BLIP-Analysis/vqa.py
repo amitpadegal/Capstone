@@ -37,10 +37,10 @@ class BLIP_VQA(nn.Module):
         self.text_decoder = BertLMHeadModel(config=decoder_config)          
 
 
-    def forward(self, image, question, answer=None, n=None, weights=None, train=False, inference='generate', k_test=128):
-        with open('temp_data.txt', 'a') as f:  # 'a' mode to append
-            f.write("Input Image Shape: {}\n".format(image.shape))
-            f.write("Input Question: {}\n".format(question))
+    def forward(self, image, question, file, answer=None, n=None, weights=None, train=False, inference='generate', k_test=128):
+        # with open('temp_data.txt', 'a') as f:  # 'a' mode to append
+        #     f.write("Input Image Shape: {}\n".format(image.shape))
+        #     f.write("Input Question: {}\n".format(question))
         
         image_embeds = self.visual_encoder(image) 
         image_atts = torch.ones(image_embeds.size()[:-1],dtype=torch.long).to(image.device)
@@ -101,14 +101,16 @@ class BLIP_VQA(nn.Module):
                 question_states = question_output.last_hidden_state
                 image_tmp, question_tmp, question_states_tmp = image_embeds.squeeze(0), question_emb.squeeze(0), question_states.squeeze(0)
                 image_tmp = cluster_embeddings(image_tmp, question_tmp.shape[0])
-                self.n_components = (question_tmp.shape[0] // 2) + 1
+                self.n_components = (question_tmp.shape[0]//2) + 1
+                # self.n_components = 3
+                print(self.n_components)
                 kmeans_im, data_im = clustering(image_tmp, pca=True, n_components=self.n_components, n_clusters=self.n_components)
                 kmeans_txt, data_txt = clustering(question_tmp, pca=True, n_components=self.n_components, n_clusters=self.n_components)
                 kmeans_out, data_out = clustering(question_states_tmp, pca=True, n_components=self.n_components, n_clusters=self.n_components)
                 print(kmeans_im.size, kmeans_txt.size, kmeans_out.size)
                 kmeans_im, kmeans_txt, kmeans_out = kmeans_im.reshape(-1, 1), kmeans_txt.reshape(-1, 1), kmeans_out.reshape(-1, 1)
                 P, maps = convert_data_to_distribution(kmeans_im, kmeans_txt, kmeans_out)
-                res = get_measure(P)
+                res = get_measure(P, file)
                 # print(res)
 
                 question_atts = torch.ones(question_states.size()[:-1],dtype=torch.long).to(question_states.device)
@@ -230,7 +232,6 @@ def cluster_embeddings(embeddings, target_samples):
     """
     
     num_samples = embeddings.shape[0]
-    
     if num_samples <= target_samples:
         return embeddings  # No clustering needed
     

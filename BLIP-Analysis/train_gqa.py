@@ -97,12 +97,12 @@ def evaluation(model, data_loader, device, config) :
         answer_candidates.input_ids[:,0] = model.tokenizer.bos_token_id
         
     for n, (image, question, question_id) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):        
-        print(n, image.shape if hasattr(image, "shape") else len(image))
+        # print(n, image.shape if hasattr(image, "shape") else len(image))
         image = image.to(device,non_blocking=True)             
 
         if config['inference']=='generate':
             print(n)
-            answers, res = model(image, question, train=False, inference='generate') 
+            answers, res = model(image, question, "blip_gqa.json",train=False, inference='generate') 
 
             out = calculate_modality_dependence(res)
             bias1 += out['dependence1']

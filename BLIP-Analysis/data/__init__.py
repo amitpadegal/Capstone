@@ -66,10 +66,10 @@ def create_dataset(dataset, config, min_scale=0.5):
         return test_dataset
     
     elif dataset=='nlvr': 
-        train_dataset = nlvr_dataset(transform_train, config['image_root'], config['ann_root'],'train')
-        val_dataset = nlvr_dataset(transform_test, config['image_root'], config['ann_root'],'val')
+        # train_dataset = nlvr_dataset(transform_train, config['image_root'], config['ann_root'],'train')
+        # val_dataset = nlvr_dataset(transform_test, config['image_root'], config['ann_root'],'val')
         test_dataset = nlvr_dataset(transform_test, config['image_root'], config['ann_root'],'test')     
-        return train_dataset, val_dataset, test_dataset   
+        return test_dataset   
     
     elif dataset=='gqa':
         test_dataset = GQADataset(

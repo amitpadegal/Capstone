@@ -11,5 +11,5 @@ scikit-learn
 git+https://github.com/openai/CLIP.git
 Pillow
 pandas
-
+dask
 
