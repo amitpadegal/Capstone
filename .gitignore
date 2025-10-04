@@ -11,3 +11,4 @@ gqa_20k_subset.json
 foildataset_10k.json
 foildataset_10k_modified.json
 vqa_20k_subset.json
+model_base_nlvr.pth
